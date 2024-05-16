@@ -1,26 +1,18 @@
 import pytest 
 import datetime
 from bank import Account, Transaction
-from sqlalchemy import func
 from unittest.mock import MagicMock
-# Explication de call_args[0][0]
-# call_args est une propriété de l'objet MagicMock qui enregistre les arguments avec lesquels la méthode mockée a 
-# été appelée pour la dernière fois.
-# call_args[0] accède aux arguments positionnels passés à la méthode mockée. Cela retourne un tuple contenant tous
-# les arguments positionnels.
-# call_args[0][0] accède au premier argument positionnel de la dernière appelée. Dans le cas de session.add(transaction),
-# ce premier argument est l'objet Transaction que vous voulez vérifier.
 
 def test_deposit_normal(account_factory):
     account = account_factory(100)
     account.deposit(50)
     assert account.get_balance() == 150 # Vérifier que le solde est mis à jour
     assert account.session.commit.called # Vérifier que le session.commit() a été appelé.
-    transaction = account.session.add.call_args[0][0]
+    transaction = account.session.query(Transaction).first()
     assert transaction.amount == 50 #Vérifier que la transaction est d'un montant de 50.
     assert transaction.type == "deposit" #Vérifier que la transaction est correctement ajoutée avec le type "deposit".
     #assert transaction.timestamp  #Vérifier que le timestamp de la transaction est correctement enregistré.
-    #assert account.session.query(Transaction).count() == 1
+    
 
 def test_deposit_negative_amount(account_factory):
     account = account_factory(100)
@@ -29,9 +21,9 @@ def test_deposit_negative_amount(account_factory):
     #Vérifier que le solde du compte n'a pas changé.
     assert account.balance == 100
     #verifier qu'il n'y a pas eu de transaction
-    assert account.session.add.call_count == 1 
+    assert account.session.query(Transaction).count() == 0
     #Vérifier que le session.commit() n'a pas été appelé.
-    assert account.session.commit.call_count == 1 
+    assert account.session.commit.call_count == 1 #un car y'a quand meme l'account qui a été commit
 
 def test_deposit_zero_amount(account_factory):
     account = account_factory(100)
@@ -40,7 +32,7 @@ def test_deposit_zero_amount(account_factory):
     #Vérifier que le solde du compte n'a pas changé.
     assert account.balance == 100
     #verifier qu'il n'y a pas eu de transaction
-    assert account.session.add.call_count == 1 
+    assert account.session.query(Transaction).count() == 0
     #Vérifier que le session.commit() n'a pas été appelé.
     assert account.session.commit.call_count == 1 
 
@@ -60,7 +52,7 @@ def test_withdraw_insufficient_funds(account_factory):
     #Vérifier que le solde reste inchangé.
     assert account.get_balance() == 100
     #Vérifier qu'aucune transaction n'est ajoutée.
-    assert account.session.add.call_count == 1
+    assert account.session.query(Transaction).count() == 0
     #Vérifier que le session.commit() n'a pas été appelé
     assert account.session.commit.call_count == 1
 
@@ -71,7 +63,7 @@ def test_withdraw_negative_amount(account_factory):
     #Vérifier que le solde reste inchangé.
     assert account.get_balance() == 100
     #Vérifier qu'aucune transaction n'est ajoutée.
-    assert account.session.add.call_count == 1
+    assert account.session.query(Transaction).count() == 0
     #Vérifier que le session.commit() n'a pas été appelé
     assert account.session.commit.call_count == 1
 
@@ -83,7 +75,7 @@ def test_withdraw_zero_amount(account_factory):
     #Vérifier que le solde reste inchangé.
     assert account.get_balance() == 100
     #Vérifier qu'aucune transaction n'est créée.
-    assert account.session.add.call_count == 1
+    assert account.session.query(Transaction).count() == 0
     #Vérifier que le session.commit() n'a pas été appelé
     assert account.session.commit.call_count == 1
 
@@ -99,10 +91,10 @@ def test_transfer_normal(account_factory):
     #Vérifier que le montant est ajouté au compte cible.
     assert account_deux.get_balance() == 250
     #Vérifier que deux transactions sont créées avec les types appropriés.
-    assert account_un.session.add.call_count == 2
-    assert account_deux.session.add.call_count == 2
-    transfer_emetteur = account_un.session.add.call_args[0][0]
-    transfer_recepteur = account_deux.session.add.call_args[0][0]
+    assert account_un.session.query(Transaction).count() == 1
+    assert account_deux.session.query(Transaction).count() == 1
+    transfer_emetteur = account_un.session.query(Transaction).first()
+    transfer_recepteur = account_deux.session.query(Transaction).first()
     assert transfer_emetteur.type == "transfer"
     assert transfer_recepteur.type == "transfer"
     #Vérifier que le session.commit() a été appelé.
