@@ -14,7 +14,7 @@ from unittest.mock import MagicMock
 def test_deposit_normal(account_factory):
     account = account_factory(100)
     account.deposit(50)
-    assert account.get_balance() == 15 # Vérifier que le solde est mis à jour
+    assert account.get_balance() == 150 # Vérifier que le solde est mis à jour
     assert account.session.commit.called # Vérifier que le session.commit() a été appelé.
     transaction = account.session.add.call_args[0][0]
     assert transaction.amount == 50 #Vérifier que la transaction est d'un montant de 50.
