@@ -1,13 +1,12 @@
 import pytest 
 import datetime
 from bank import Account, Transaction
-from unittest.mock import MagicMock
 
 def test_deposit_normal(account_factory):
     account = account_factory(100)
     account.deposit(50)
     assert account.get_balance() == 150 # Vérifier que le solde est mis à jour
-    assert account.session.commit.called # Vérifier que le session.commit() a été appelé.
+    assert account.session.commit.call_count == 2 # Vérifier que le session.commit() a été appelé.
     transaction = account.session.query(Transaction).first()
     assert transaction.amount == 50 #Vérifier que la transaction est d'un montant de 50.
     assert transaction.type == "deposit" #Vérifier que la transaction est correctement ajoutée avec le type "deposit".
@@ -40,7 +39,7 @@ def test_withdraw_normal(account_factory):
     account = account_factory(100)
     account.withdraw(50)
     assert account.get_balance() == 50 # Vérifier que le solde est correctement déduit.
-    transaction = account.session.add.call_args[0][0]
+    transaction = account.session.query(Transaction).first()
     assert transaction.type == "withdraw"
     assert account.session.commit.call_count == 2  # Vérifier que le session.commit() a été appelé.
 
