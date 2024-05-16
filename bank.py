@@ -15,7 +15,7 @@ class Account(Base):
     def __init__(self, balance, engine=None):
         self.balance = balance
         self.session = scoped_session(sessionmaker(bind=engine))
-
+       
     def create_account(self):
         self.session.add(self)
         self.session.commit()
